@@ -1,0 +1,2 @@
+rootProject.name = 'FluidConsumer_Java'
+include('app')
