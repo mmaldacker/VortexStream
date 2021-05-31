@@ -1,3 +1,4 @@
+#include <functional>
 #include <iostream>
 #include <stdexcept>
 #include <string>
@@ -7,6 +8,20 @@
 #include <rabbitmq-c/amqp.h>
 #include <rabbitmq-c/framing.h>
 #include <rabbitmq-c/tcp_socket.h>
+
+amqp_bytes_t to_bytes(const std::string& s)
+{
+  amqp_bytes_t bytes = amqp_bytes_malloc(s.size());
+  std::memcpy(bytes.bytes, s.data(), s.size());
+  bytes.len = s.length();
+
+  return bytes;
+}
+
+std::string to_string(amqp_bytes_t b)
+{
+  return {(char*)b.bytes, b.len};
+}
 
 void check_result(amqp_rpc_reply_t x, char const* context)
 {
@@ -29,17 +44,15 @@ void check_result(amqp_rpc_reply_t x, char const* context)
         case AMQP_CONNECTION_CLOSE_METHOD:
         {
           auto* m = (amqp_connection_close_t*)x.reply.decoded;
-          std::string reply_msg((char*)m->reply_text.bytes, m->reply_text.len);
           std::cerr << context << ": server connection error " << m->reply_code
-                    << ", message: " << reply_msg << "\n";
+                    << ", message: " << to_string(m->reply_text) << "\n";
           break;
         }
         case AMQP_CHANNEL_CLOSE_METHOD:
         {
           auto* m = (amqp_channel_close_t*)x.reply.decoded;
-          std::string reply_msg((char*)m->reply_text.bytes, m->reply_text.len);
           std::cerr << context << ": server channel error " << m->reply_code
-                    << ", message: " << reply_msg << "\n";
+                    << ", message: " << to_string(m->reply_text) << "\n";
           break;
         }
         default:
@@ -50,15 +63,6 @@ void check_result(amqp_rpc_reply_t x, char const* context)
   }
 
   throw std::runtime_error("fatal rabbitmq error");
-}
-
-amqp_bytes_t to_bytes(const std::string& s)
-{
-  amqp_bytes_t bytes = amqp_bytes_malloc(s.size());
-  std::memcpy(bytes.bytes, s.data(), s.size());
-  bytes.len = s.length();
-
-  return bytes;
 }
 
 // Simple wrapper for a single connection with a single channel and a single queue
@@ -83,12 +87,12 @@ public:
     auto result = amqp_login(conn_, "/", 0, 131072, 0, AMQP_SASL_METHOD_PLAIN, "guest", "guest");
     check_result(result, "Logging in");
 
-    amqp_channel_open(conn_, 1);
+    amqp_channel_open(conn_, channel_);
     result = amqp_get_rpc_reply(conn_);
     check_result(result, "Opening channel");
   }
 
-  void Bind(const std::string& queue_name = "")
+  void Create(const std::string& queue_name = "")
   {
     amqp_bytes_t queue_names_bytes = amqp_empty_bytes;
     if (!queue_name.empty())
@@ -96,7 +100,7 @@ public:
       queue_names_bytes = to_bytes(queue_name);
     }
 
-    auto* r = amqp_queue_declare(conn_, 1, queue_names_bytes, 0, 0, 0, 1, amqp_empty_table);
+    auto* r = amqp_queue_declare(conn_, channel_, queue_names_bytes, 0, 0, 0, 1, amqp_empty_table);
     amqp_bytes_free(queue_names_bytes);
 
     auto result = amqp_get_rpc_reply(conn_);
@@ -110,52 +114,60 @@ public:
     // Queue is automatically bound to default exchange.
   }
 
-  void Consume()
+  void Consume(const std::function<void(amqp_envelope_t)>& callback)
   {
-    amqp_basic_consume(conn_, 1, queuename_, amqp_empty_bytes, 0, 1, 0, amqp_empty_table);
+    amqp_basic_consume(conn_, channel_, queuename_, amqp_empty_bytes, 0, 1, 0, amqp_empty_table);
     auto result = amqp_get_rpc_reply(conn_);
     check_result(result, "Consuming");
 
     while (true)
     {
-      amqp_rpc_reply_t res;
-      amqp_envelope_t envelope;
-
       amqp_maybe_release_buffers(conn_);
 
-      res = amqp_consume_message(conn_, &envelope, NULL, 0);
-
-      if (AMQP_RESPONSE_NORMAL != res.reply_type)
+      amqp_envelope_t envelope;
+      auto result = amqp_consume_message(conn_, &envelope, nullptr, 0);
+      if (AMQP_RESPONSE_NORMAL != result.reply_type)
       {
         break;
       }
 
-      std::string exchange((char*)envelope.exchange.bytes, (int)envelope.exchange.len);
-      std::string routing_key((char*)envelope.routing_key.bytes, (int)envelope.routing_key.len);
-
-      std::cout << "Delivery " << (unsigned)envelope.delivery_tag << ", exchange " << exchange
-                << " routingkey " << routing_key << "\n";
+      std::cout << "Delivery " << (unsigned)envelope.delivery_tag << ", exchange "
+                << to_string(envelope.exchange) << " routingkey " << to_string(envelope.routing_key)
+                << "\n";
 
       if (envelope.message.properties._flags & AMQP_BASIC_CONTENT_TYPE_FLAG)
       {
-        std::string content_type((char*)envelope.message.properties.content_type.bytes,
-                                 (int)envelope.message.properties.content_type.len);
-        std::cout << "Content-type: " << content_type << "\n";
+        std::cout << "Content-type: " << to_string(envelope.message.properties.content_type)
+                  << "\n";
+      }
+
+      if (envelope.message.properties._flags & AMQP_BASIC_CORRELATION_ID_FLAG)
+      {
+        std::cout << "Correlation id: " << to_string(envelope.message.properties.correlation_id)
+                  << "\n";
+      }
+
+      if (envelope.message.properties._flags & AMQP_BASIC_REPLY_TO_FLAG)
+      {
+        std::cout << "Reply to: " << to_string(envelope.message.properties.reply_to) << "\n";
       }
 
       std::cout << "----\n";
 
-      // amqp_dump(envelope.message.body.bytes, envelope.message.body.len);
+      callback(envelope);
 
       amqp_destroy_envelope(&envelope);
     }
   }
 
-  void Publish()
+  void Publish(amqp_bytes_t queue_name, amqp_bytes_t correlation_id, amqp_bytes_t message_bytes)
   {
-    amqp_bytes_t message_bytes;
-    auto type = amqp_cstring_bytes("amq.direct");
-    int result = amqp_basic_publish(conn_, 1, type, queuename_, 0, 0, NULL, message_bytes);
+    amqp_basic_properties_t props;
+    props._flags = AMQP_BASIC_CORRELATION_ID_FLAG;
+    props.correlation_id = correlation_id;
+
+    int result = amqp_basic_publish(
+        conn_, channel_, amqp_empty_bytes, queue_name, 0, 0, &props, message_bytes);
     if (result)
     {
       std::runtime_error("error publishing");
@@ -177,6 +189,7 @@ public:
     }
   }
 
+  const int channel_ = 1;
   amqp_socket_t* socket_ = nullptr;
   amqp_connection_state_t conn_;
   amqp_bytes_t queuename_;
@@ -185,15 +198,19 @@ public:
 int main(int argc, char const* const* argv)
 {
   const char* hostname = "localhost";
-  int port = 5672;
+  int port = 5672;  // default port
 
   const std::string queue_name = "fluid_request";
 
   try
   {
     Queue queue(hostname, port);
-    queue.Bind(queue_name);
-    queue.Consume();
+    queue.Create(queue_name);
+    queue.Consume([&](amqp_envelope_t envelope) {
+      queue.Publish(envelope.message.properties.reply_to,
+                    envelope.message.properties.correlation_id,
+                    amqp_empty_bytes);
+    });
   }
   catch (const std::exception& e)
   {

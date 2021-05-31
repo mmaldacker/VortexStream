@@ -43,6 +43,8 @@ public class App implements AutoCloseable {
                 .replyTo(replyQueueName)
                 .build();
 
+        System.out.println("Correlation id: " + corrId + ", Queue name: " + replyQueueName);
+
         channel.basicPublish("", requestQueueName, props, null);
 
         String ctag = channel.basicConsume(replyQueueName, true, (consumerTag, delivery) -> {
