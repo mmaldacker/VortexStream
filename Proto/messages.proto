@@ -1,0 +1,12 @@
+syntax = "proto2";
+
+package VortexStream;
+
+message Request {
+    optional int32 num_frames = 1;
+}
+
+message Frame {
+    optional int32 frame_id = 1;
+    repeated float pixel = 2;
+}
