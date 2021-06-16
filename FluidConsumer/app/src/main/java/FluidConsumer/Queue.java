@@ -6,31 +6,19 @@ import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.UUID;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeoutException;
 
-public class App implements AutoCloseable {
-    private Connection connection;
-    private Channel channel;
-    private String requestQueueName = "fluid_request";
+public class Queue implements AutoCloseable {
+    private final Connection connection;
+    private final Channel channel;
 
-    public App() throws IOException, TimeoutException {
+    public Queue() throws IOException, TimeoutException {
         ConnectionFactory factory = new ConnectionFactory();
         factory.setHost("localhost");
 
         connection = factory.newConnection();
         channel = connection.createChannel();
-    }
-
-    public static void main(String[] argv) {
-        try (App app = new App()) {
-            app.call();
-        } catch (IOException | InterruptedException | TimeoutException e) {
-            e.printStackTrace();
-        }
     }
 
     public void call() throws IOException, InterruptedException {
@@ -45,6 +33,7 @@ public class App implements AutoCloseable {
 
         System.out.println("Correlation id: " + corrId + ", Queue name: " + replyQueueName);
 
+        String requestQueueName = "fluid_request";
         channel.basicPublish("", requestQueueName, props, null);
 
         String ctag = channel.basicConsume(replyQueueName, true, (consumerTag, delivery) -> {
