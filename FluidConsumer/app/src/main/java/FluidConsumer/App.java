@@ -1,5 +1,6 @@
 package FluidConsumer;
 
+import VortexStream.Messages;
 import javafx.application.Application;
 import javafx.beans.binding.Bindings;
 import javafx.event.ActionEvent;
@@ -19,6 +20,9 @@ import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
 public class App extends Application  {
+
+    private Player player;
+
     public App() {
     }
 
@@ -29,15 +33,9 @@ public class App extends Application  {
         root.setVgap(8);
         root.setPadding(new Insets(5));
 
-        var writableImage = new WritableImage(900, 900);
-        var image = new ImageView(writableImage);
-        root.add(image, 0, 0, 5, 1);
-
-        var arrow1 = new Arrow(0, 0, 200, 200);
-        root.add(arrow1, 0, 0, 5,  1);
-
-        var arrow2 = new Arrow(300, 200, 100, 400);
-        root.add(arrow2, 0, 0, 5,  1);
+        player = new Player(100, 100);
+        player.start();
+        root.add(player.imageView, 0, 0, 5, 1);
 
         var slider = new Slider(0, 100, 0);
         slider.setBlockIncrement(1);
@@ -53,7 +51,7 @@ public class App extends Application  {
 
         var requestBtn = new Button("Request");
         requestBtn.setOnAction((ActionEvent event) -> {
-            call();
+            request(1);
         });
         GridPane.setHalignment(requestBtn, HPos.RIGHT);
         root.add(requestBtn, 2, 1);
@@ -74,9 +72,11 @@ public class App extends Application  {
         launch();
     }
 
-    public void call() {
+    public void request(int numFrames) {
         try (Queue queue = new Queue()) {
-            queue.RequestFrames(3);
+            queue.RequestFrames(numFrames, (Messages.Frame frame) -> {
+                player.addFrame(frame);
+            });
         } catch (IOException | InterruptedException | TimeoutException e) {
             e.printStackTrace();
         }

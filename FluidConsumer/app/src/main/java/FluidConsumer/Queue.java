@@ -14,6 +14,12 @@ public class Queue implements AutoCloseable {
     private final Connection connection;
     private final Channel channel;
 
+    @FunctionalInterface
+    public interface Callback
+    {
+        void handle(Messages.Frame frame);
+    }
+
     public Queue() throws IOException, TimeoutException {
         ConnectionFactory factory = new ConnectionFactory();
         factory.setHost("localhost");
@@ -22,7 +28,7 @@ public class Queue implements AutoCloseable {
         channel = connection.createChannel();
     }
 
-    public void RequestFrames(int num_frames) throws IOException, InterruptedException {
+    public void RequestFrames(int numFrames, Callback callback) throws IOException, InterruptedException {
         final String corrId = UUID.randomUUID().toString();
 
         String replyQueueName = channel.queueDeclare().getQueue();
@@ -34,7 +40,7 @@ public class Queue implements AutoCloseable {
 
         System.out.println("Correlation id: " + corrId + ", Queue name: " + replyQueueName);
 
-        var request = Messages.Request.newBuilder().setNumFrames(num_frames).build();
+        var request = Messages.Request.newBuilder().setNumFrames(numFrames).build();
 
         String requestQueueName = "fluid_request";
         channel.basicPublish("", requestQueueName, props, request.toByteArray());
@@ -43,6 +49,7 @@ public class Queue implements AutoCloseable {
             if (delivery.getProperties().getCorrelationId().equals(corrId)) {
                 var frame = Messages.Frame.parseFrom(delivery.getBody());
                 System.out.println("Received reply! Id " + frame.getFrameId());
+                callback.handle(frame);
             }
         }, consumerTag -> {
         });
