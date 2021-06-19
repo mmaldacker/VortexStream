@@ -26,9 +26,9 @@ find_library(Rabbitmqc_LIBRARY
   )
 
 find_package(Protobuf REQUIRED)
-protobuf_generate_cpp(PROTO_SRC PROTO_HEADER ../messages.proto)
+protobuf_generate_cpp(PROTO_SRC PROTO_HEADER ../Proto/messages.proto)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
-add_executable(vortex_stream_compute main.cpp ${PROTO_HEADER} ${PROTO_SRC})
+add_executable(vortex_stream_compute main.cpp Utils.hpp Queue.hpp ${PROTO_HEADER} ${PROTO_SRC})
 target_link_libraries(vortex_stream_compute vortex2d glm ${Rabbitmqc_LIBRARY} protobuf::libprotobuf)
 target_include_directories(vortex_stream_compute PRIVATE ${Rabbitmqc_INCLUDE_DIR})

@@ -2,11 +2,24 @@ syntax = "proto2";
 
 package VortexStream;
 
+message Vec2 {
+    optional float x = 1;
+    optional float y = 2;
+}
+
+message Source {
+    optional Vec2 position = 1;
+    optional Vec2 direction = 2;
+}
+
 message Request {
     optional int32 num_frames = 1;
+    repeated Source sources = 2;
 }
 
 message Frame {
     optional int32 frame_id = 1;
-    repeated float pixel = 2;
+    optional int32 width = 2;
+    optional int32 height = 3;
+    repeated float pixels = 4;
 }
