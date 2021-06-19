@@ -1,5 +1,6 @@
 package FluidConsumer;
 
+import VortexStream.Messages;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
@@ -21,7 +22,7 @@ public class Queue implements AutoCloseable {
         channel = connection.createChannel();
     }
 
-    public void call() throws IOException, InterruptedException {
+    public void RequestFrames(int num_frames) throws IOException, InterruptedException {
         final String corrId = UUID.randomUUID().toString();
 
         String replyQueueName = channel.queueDeclare().getQueue();
@@ -33,12 +34,15 @@ public class Queue implements AutoCloseable {
 
         System.out.println("Correlation id: " + corrId + ", Queue name: " + replyQueueName);
 
+        var request = Messages.Request.newBuilder().setNumFrames(num_frames).build();
+
         String requestQueueName = "fluid_request";
-        channel.basicPublish("", requestQueueName, props, null);
+        channel.basicPublish("", requestQueueName, props, request.toByteArray());
 
         String ctag = channel.basicConsume(replyQueueName, true, (consumerTag, delivery) -> {
             if (delivery.getProperties().getCorrelationId().equals(corrId)) {
-                System.out.println("Received reply!");
+                var frame = Messages.Frame.parseFrom(delivery.getBody());
+                System.out.println("Received reply! Id " + frame.getFrameId());
             }
         }, consumerTag -> {
         });

@@ -1,8 +1,8 @@
 package FluidConsumer;
 
-import VortexStream.Messages;
 import javafx.application.Application;
 import javafx.beans.binding.Bindings;
+import javafx.event.ActionEvent;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
@@ -52,6 +52,9 @@ public class App extends Application  {
         root.add(numFrameLabel, 0, 1);
 
         var requestBtn = new Button("Request");
+        requestBtn.setOnAction((ActionEvent event) -> {
+            call();
+        });
         GridPane.setHalignment(requestBtn, HPos.RIGHT);
         root.add(requestBtn, 2, 1);
 
@@ -73,7 +76,7 @@ public class App extends Application  {
 
     public void call() {
         try (Queue queue = new Queue()) {
-            queue.call();
+            queue.RequestFrames(3);
         } catch (IOException | InterruptedException | TimeoutException e) {
             e.printStackTrace();
         }
