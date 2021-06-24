@@ -32,8 +32,11 @@ public class Player extends AnimationTimer {
             var writer = image.getPixelWriter();
             for (int j = 0; j < frame.getHeight(); j++) {
                 for (int i = 0; i < frame.getWidth(); i++) {
-                    float c = frame.getPixels(i + j * frame.getWidth());
-                    writer.setColor(i, j, Color.color(c, c, c));
+                    int index = i + j * frame.getWidth();
+                    if (index < frame.getPixelsCount()) {
+                        float c = frame.getPixels(index);
+                        writer.setColor(i, j, Color.color(c, c, c));
+                    }
                 }
             }
 

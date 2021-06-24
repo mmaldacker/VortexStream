@@ -45,16 +45,15 @@ public class Queue implements AutoCloseable {
         String requestQueueName = "fluid_request";
         channel.basicPublish("", requestQueueName, props, request.toByteArray());
 
-        String ctag = channel.basicConsume(replyQueueName, true, (consumerTag, delivery) -> {
+        channel.basicConsume(replyQueueName, true, (consumerTag, delivery) -> {
             if (delivery.getProperties().getCorrelationId().equals(corrId)) {
                 var frame = Messages.Frame.parseFrom(delivery.getBody());
                 System.out.println("Received reply! Id " + frame.getFrameId());
                 callback.handle(frame);
             }
         }, consumerTag -> {
+            System.out.println("Reply cancelled " +consumerTag);
         });
-
-        channel.basicCancel(ctag);
     }
 
     public void close() throws IOException {

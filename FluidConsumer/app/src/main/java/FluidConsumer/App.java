@@ -22,6 +22,7 @@ import java.util.concurrent.TimeoutException;
 public class App extends Application  {
 
     private Player player;
+    private Queue queue;
 
     public App() {
     }
@@ -32,6 +33,8 @@ public class App extends Application  {
         root.setHgap(8);
         root.setVgap(8);
         root.setPadding(new Insets(5));
+
+        queue = new Queue();
 
         player = new Player(100, 100);
         player.start();
@@ -51,7 +54,13 @@ public class App extends Application  {
 
         var requestBtn = new Button("Request");
         requestBtn.setOnAction((ActionEvent event) -> {
-            request(1);
+            try {
+                queue.RequestFrames((int)slider.getValue(), (Messages.Frame frame) -> {
+                    player.addFrame(frame);
+                });
+            } catch (IOException | InterruptedException e) {
+                e.printStackTrace();
+            }
         });
         GridPane.setHalignment(requestBtn, HPos.RIGHT);
         root.add(requestBtn, 2, 1);
@@ -72,13 +81,4 @@ public class App extends Application  {
         launch();
     }
 
-    public void request(int numFrames) {
-        try (Queue queue = new Queue()) {
-            queue.RequestFrames(numFrames, (Messages.Frame frame) -> {
-                player.addFrame(frame);
-            });
-        } catch (IOException | InterruptedException | TimeoutException e) {
-            e.printStackTrace();
-        }
-    }
 }
