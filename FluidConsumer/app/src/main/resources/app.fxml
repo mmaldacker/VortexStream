@@ -7,41 +7,50 @@
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.Slider?>
 <?import javafx.scene.control.ToggleGroup?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.Pane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Text?>
 
 
-<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefWidth="600.0" xmlns="http://javafx.com/javafx/16" xmlns:fx="http://javafx.com/fxml/1">
+<VBox xmlns="http://javafx.com/javafx/16" xmlns:fx="http://javafx.com/fxml/1">
    <children>
-      <HBox prefWidth="200.0" spacing="5.0">
+      <HBox spacing="5.0">
          <children>
-            <RadioButton mnemonicParsing="false" selected="true" text="250x250">
+            <RadioButton fx:id="small" mnemonicParsing="false" selected="true" text="250x250">
                <toggleGroup>
                   <ToggleGroup fx:id="sizeGroup" />
                </toggleGroup>
             </RadioButton>
-            <RadioButton mnemonicParsing="false" text="500x500" toggleGroup="$sizeGroup" />
-            <RadioButton mnemonicParsing="false" text="1000x1000" toggleGroup="$sizeGroup" />
+            <RadioButton fx:id="medium" mnemonicParsing="false" text="500x500" toggleGroup="$sizeGroup" />
+            <RadioButton fx:id="large" mnemonicParsing="false" text="1000x1000" toggleGroup="$sizeGroup" />
          </children>
          <VBox.margin>
-            <Insets left="5.0" top="5.0" />
+            <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
          </VBox.margin>
       </HBox>
-      <Region prefHeight="200.0" prefWidth="200.0" />
-      <HBox alignment="CENTER_LEFT" prefWidth="200.0" spacing="5.0">
+      <HBox alignment="CENTER">
+         <children>
+            <Pane style="-fx-border-color: black;">
+               <children>
+                  <ImageView fx:id="imageView" fitHeight="250.0" fitWidth="250.0" pickOnBounds="true" preserveRatio="true" />
+               </children>
+            </Pane>
+         </children>
+      </HBox>
+      <HBox alignment="CENTER_LEFT" spacing="5.0">
          <children>
             <Text fx:id="frameText" strokeType="OUTSIDE" strokeWidth="0.0" text="Num Frames: XXXX" />
             <Slider fx:id="frameSlider" blockIncrement="1.0" majorTickUnit="1.0" max="1000.0" minorTickCount="0" snapToTicks="true" />
-            <Button mnemonicParsing="false" text="Submit" />
+            <Button mnemonicParsing="false" onAction="#onSubmit" text="Submit" />
             <Separator orientation="VERTICAL" />
             <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Progress:" />
-            <ProgressBar prefWidth="200.0" progress="0.0" />
+            <ProgressBar fx:id="progress" prefWidth="200.0" progress="0.0" />
          </children>
-         <padding>
-            <Insets bottom="5.0" left="5.0" />
-         </padding>
+         <VBox.margin>
+            <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+         </VBox.margin>
       </HBox>
    </children>
 </VBox>

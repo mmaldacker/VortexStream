@@ -13,15 +13,18 @@ public class FluidRenderer extends AnimationTimer {
     private WritableImage image;
     public ImageView imageView;
 
-    public FluidRenderer(int width, int height) {
+    public FluidRenderer(ImageView imageView, int width, int height) {
         frames = Lists.newArrayList();
         image = new WritableImage(width, height);
-        imageView = new ImageView(image);
+        this.imageView = imageView;
+        this.imageView.setImage(image);
     }
 
     public void resize(int width, int height) {
         image = new WritableImage(width, height);
-        imageView = new ImageView(image);
+        imageView.setFitWidth(width);
+        imageView.setFitHeight(height);
+        imageView.setImage(image);
     }
 
     public void addFrame(Messages.Frame frame) {

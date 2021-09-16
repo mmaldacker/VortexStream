@@ -2,44 +2,78 @@ package FluidConsumer;
 
 import VortexStream.Messages;
 import javafx.beans.binding.Bindings;
+import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ProgressBar;
-import javafx.scene.control.Slider;
+import javafx.scene.control.*;
+import javafx.scene.image.ImageView;
 import javafx.scene.text.Text;
+import javafx.stage.Stage;
 
 import java.io.IOException;
+import java.util.concurrent.TimeoutException;
 
 public class Controller {
+    @FXML
+    public Text frameText;
+    @FXML
+    public Slider frameSlider;
+    @FXML
+    public ProgressBar progress;
+    @FXML
+    public RadioButton small;
+    @FXML
+    public RadioButton medium;
+    @FXML
+    public RadioButton large;
+    @FXML
+    public ToggleGroup sizeGroup;
+    @FXML
+    public ImageView imageView;
+    private Stage stage;
     private FluidController fluidController;
     private FluidRenderer fluidRenderer;
 
-    @FXML
-    public Text frameText;
+    public Controller() throws IOException, TimeoutException {
+        fluidController = new FluidController();
+    }
 
-    @FXML
-    public Slider frameSlider;
-
-    @FXML
-    public Button submit;
-
-    @FXML
-    public ProgressBar progress;
+    public void setStage(Stage stage) {
+        this.stage = stage;
+    }
 
     @FXML
     public void initialize() {
+        this.fluidRenderer = new FluidRenderer(imageView, 250, 250);
+
         frameText.textProperty().bind(Bindings.format("Num frames: %.0f", frameSlider.valueProperty()));
+        sizeGroup.selectedToggleProperty().addListener((ObservableValue<? extends Toggle> ov, Toggle old_toggle, Toggle new_toggle) -> {
+                    if (new_toggle == small) {
+                        fluidRenderer.resize(250, 250);
+                        stage.sizeToScene();
+                    } else if (new_toggle == medium) {
+                        fluidRenderer.resize(500, 500);
+                        stage.sizeToScene();
+                    } else if (new_toggle == large) {
+                        fluidRenderer.resize(1000, 1000);
+                        stage.sizeToScene();
+                    }
+                }
+        );
     }
 
     @FXML
     public void onSubmit() {
-            try {
-                fluidController.RequestFrames((int) frameSlider.getValue(), (Messages.Frame frame) -> {
-                    fluidRenderer.addFrame(frame);
-                });
-            } catch (IOException | InterruptedException e) {
-                e.printStackTrace();
-            }
+        try {
+            progress.setProgress(0.0);
+            fluidController.RequestFrames((int) frameSlider.getValue(), (Messages.Frame frame) -> {
+                fluidRenderer.addFrame(frame);
+                progress.setProgress(frame.getFrameId() / frameSlider.getValue());
+                if (frame.getFrameId() == frameSlider.getValue() - 1.0) {
+                    fluidRenderer.start();
+                }
+            });
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 }

@@ -13,11 +13,16 @@ public class App extends Application  {
     @Override
     public void start(Stage stage) throws Exception {
         var loader = new FXMLLoader(getClass().getClassLoader().getResource("app.fxml"));
-        loader.setController(new Controller());
+        var controller = new Controller();
+        loader.setController(controller);
         Parent root =  loader.load();
 
         Scene scene = new Scene(root);
         stage.setScene(scene);
+        stage.setResizable(false);
+
+        controller.setStage(stage);
+
         stage.show();
     }
 
