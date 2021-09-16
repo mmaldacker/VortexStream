@@ -14,12 +14,6 @@ public class FluidController implements AutoCloseable {
     private final Connection connection;
     private final Channel channel;
 
-    @FunctionalInterface
-    public interface Callback
-    {
-        void handle(Messages.Frame frame);
-    }
-
     public FluidController() throws IOException, TimeoutException {
         ConnectionFactory factory = new ConnectionFactory();
         factory.setHost("localhost");
@@ -28,7 +22,7 @@ public class FluidController implements AutoCloseable {
         channel = connection.createChannel();
     }
 
-    public void RequestFrames(int numFrames, Callback callback) throws IOException, InterruptedException {
+    public void RequestFrames(int numFrames, int width, int height, Callback callback) throws IOException, InterruptedException {
         final String corrId = UUID.randomUUID().toString();
 
         String replyQueueName = channel.queueDeclare().getQueue();
@@ -40,7 +34,11 @@ public class FluidController implements AutoCloseable {
 
         System.out.println("Correlation id: " + corrId + ", Queue name: " + replyQueueName);
 
-        var request = Messages.Request.newBuilder().setNumFrames(numFrames).build();
+        var request = Messages.Request.newBuilder()
+                .setNumFrames(numFrames)
+                .setWidth(width)
+                .setHeight(height)
+                .build();
 
         String requestQueueName = "fluid_request";
         channel.basicPublish("", requestQueueName, props, request.toByteArray());
@@ -48,15 +46,19 @@ public class FluidController implements AutoCloseable {
         channel.basicConsume(replyQueueName, true, (consumerTag, delivery) -> {
             if (delivery.getProperties().getCorrelationId().equals(corrId)) {
                 var frame = Messages.Frame.parseFrom(delivery.getBody());
-                System.out.println("Received reply! Id " + frame.getFrameId());
                 callback.handle(frame);
             }
         }, consumerTag -> {
-            System.out.println("Reply cancelled " +consumerTag);
+            System.out.println("Reply cancelled " + consumerTag);
         });
     }
 
     public void close() throws IOException {
         connection.close();
+    }
+
+    @FunctionalInterface
+    public interface Callback {
+        void handle(Messages.Frame frame);
     }
 }

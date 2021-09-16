@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
 public class Controller {
+    private final FluidController fluidController;
     @FXML
     public Text frameText;
     @FXML
@@ -30,7 +31,6 @@ public class Controller {
     @FXML
     public ImageView imageView;
     private Stage stage;
-    private FluidController fluidController;
     private FluidRenderer fluidRenderer;
 
     public Controller() throws IOException, TimeoutException {
@@ -65,13 +65,17 @@ public class Controller {
     public void onSubmit() {
         try {
             progress.setProgress(0.0);
-            fluidController.RequestFrames((int) frameSlider.getValue(), (Messages.Frame frame) -> {
-                fluidRenderer.addFrame(frame);
-                progress.setProgress(frame.getFrameId() / frameSlider.getValue());
-                if (frame.getFrameId() == frameSlider.getValue() - 1.0) {
-                    fluidRenderer.start();
-                }
-            });
+            fluidController.RequestFrames(
+                    (int) frameSlider.getValue(),
+                    (int) imageView.getFitWidth(),
+                    (int) imageView.getFitHeight(),
+                    (Messages.Frame frame) -> {
+                        fluidRenderer.addFrame(frame);
+                        progress.setProgress(frame.getFrameId() / frameSlider.getValue());
+                        if (frame.getFrameId() == frameSlider.getValue() - 1.0) {
+                            fluidRenderer.start();
+                        }
+                    });
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }

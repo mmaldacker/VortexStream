@@ -14,7 +14,9 @@ message Source {
 
 message Request {
     optional int32 num_frames = 1;
-    repeated Source sources = 2;
+    optional int32 width = 2;
+    optional int32 height = 3;
+    repeated Source sources = 4;
 }
 
 message Frame {
