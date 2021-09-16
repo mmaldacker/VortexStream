@@ -10,7 +10,7 @@ import java.io.IOException;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
-public class Queue implements AutoCloseable {
+public class FluidController implements AutoCloseable {
     private final Connection connection;
     private final Channel channel;
 
@@ -20,7 +20,7 @@ public class Queue implements AutoCloseable {
         void handle(Messages.Frame frame);
     }
 
-    public Queue() throws IOException, TimeoutException {
+    public FluidController() throws IOException, TimeoutException {
         ConnectionFactory factory = new ConnectionFactory();
         factory.setHost("localhost");
 

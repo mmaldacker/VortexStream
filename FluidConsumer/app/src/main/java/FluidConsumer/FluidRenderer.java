@@ -4,18 +4,22 @@ import VortexStream.Messages;
 import com.google.common.collect.Lists;
 import javafx.animation.AnimationTimer;
 import javafx.scene.image.ImageView;
-import javafx.scene.image.PixelFormat;
 import javafx.scene.image.WritableImage;
 import javafx.scene.paint.Color;
 
 import java.util.List;
 
-public class Player extends AnimationTimer {
+public class FluidRenderer extends AnimationTimer {
     private WritableImage image;
     public ImageView imageView;
 
-    public Player(int width, int height) {
+    public FluidRenderer(int width, int height) {
         frames = Lists.newArrayList();
+        image = new WritableImage(width, height);
+        imageView = new ImageView(image);
+    }
+
+    public void resize(int width, int height) {
         image = new WritableImage(width, height);
         imageView = new ImageView(image);
     }
