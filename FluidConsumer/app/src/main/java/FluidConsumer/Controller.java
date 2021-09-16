@@ -65,14 +65,23 @@ public class Controller {
     public void onSubmit() {
         try {
             progress.setProgress(0.0);
+            fluidRenderer.clear();
+            fluidRenderer.stop();
+
+            var startTime = java.lang.System.currentTimeMillis();
+            var numFrames = frameSlider.getValue();
+
             fluidController.RequestFrames(
-                    (int) frameSlider.getValue(),
+                    (int) numFrames,
                     (int) imageView.getFitWidth(),
                     (int) imageView.getFitHeight(),
                     (Messages.Frame frame) -> {
                         fluidRenderer.addFrame(frame);
                         progress.setProgress(frame.getFrameId() / frameSlider.getValue());
                         if (frame.getFrameId() == frameSlider.getValue() - 1.0) {
+                            var endTime = java.lang.System.currentTimeMillis();
+                            double ms_per_frame = (endTime - startTime) / numFrames;
+                            System.out.println("Time per frame: " + ms_per_frame);
                             fluidRenderer.start();
                         }
                     });

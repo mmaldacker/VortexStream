@@ -27,6 +27,11 @@ public class FluidRenderer extends AnimationTimer {
         imageView.setImage(image);
     }
 
+    public void clear() {
+        frame_index = 0;
+        frames.clear();
+    }
+
     public void addFrame(Messages.Frame frame) {
         frames.add(frame);
     }
