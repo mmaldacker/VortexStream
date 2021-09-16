@@ -4,9 +4,8 @@ import VortexStream.Messages;
 import com.google.common.collect.Lists;
 import javafx.animation.AnimationTimer;
 import javafx.scene.image.ImageView;
+import javafx.scene.image.PixelFormat;
 import javafx.scene.image.WritableImage;
-import javafx.scene.paint.Color;
-
 import java.util.List;
 
 public class FluidRenderer extends AnimationTimer {
@@ -41,16 +40,30 @@ public class FluidRenderer extends AnimationTimer {
         if (frame_index < frames.size()) {
             var frame = frames.get(frame_index);
 
-            var writer = image.getPixelWriter();
+            int[] pixels = new int[frame.getWidth() * frame.getHeight()];
+
             for (int j = 0; j < frame.getHeight(); j++) {
                 for (int i = 0; i < frame.getWidth(); i++) {
                     int index = i + j * frame.getWidth();
                     if (index < frame.getPixelsCount()) {
                         float c = frame.getPixels(index);
-                        writer.setColor(i, j, Color.color(c, c, c));
+                        int value = (int)(c * 255.0);
+                        pixels[index] = (255 << 24) | (value << 16) | (value << 8) | value;
                     }
                 }
             }
+
+            var pixelFormat = PixelFormat.getIntArgbInstance();
+            var writer = image.getPixelWriter();
+            writer.setPixels(
+                    0,
+                    0,
+                    frame.getWidth(),
+                    frame.getHeight(),
+                    pixelFormat,
+                    pixels,
+                    0,
+                    frame.getWidth());
 
             frame_index++;
         }
