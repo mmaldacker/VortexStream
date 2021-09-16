@@ -9,7 +9,7 @@ include(FetchContent)
 FetchContent_Declare(
   vortex2d
   GIT_REPOSITORY https://github.com/mmaldacker/Vortex2D.git
-  GIT_TAG        v1.8.0
+  GIT_TAG        master
 )
 FetchContent_MakeAvailable(vortex2d)
 
