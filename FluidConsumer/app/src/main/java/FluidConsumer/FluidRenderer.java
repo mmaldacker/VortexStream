@@ -47,8 +47,8 @@ public class FluidRenderer extends AnimationTimer {
                     int index = i + j * frame.getWidth();
                     if (index < frame.getPixelsCount()) {
                         float c = frame.getPixels(index);
-                        int value = (int)(c * 255.0);
-                        pixels[index] = (255 << 24) | (value << 16) | (value << 8) | value;
+                        int value = 255 - (int)(c * 255.0);
+                        pixels[index] = ((255 - value) << 24) | (value << 16) | (value << 8) | value;
                     }
                 }
             }

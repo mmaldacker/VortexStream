@@ -7,6 +7,7 @@ import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
@@ -22,7 +23,7 @@ public class FluidController implements AutoCloseable {
         channel = connection.createChannel();
     }
 
-    public void RequestFrames(int numFrames, int width, int height, Callback callback) throws IOException, InterruptedException {
+    public void RequestFrames(int numFrames, int width, int height, List<Source> sources, Callback callback) throws IOException, InterruptedException {
         final String corrId = UUID.randomUUID().toString();
 
         String replyQueueName = channel.queueDeclare().getQueue();
@@ -34,13 +35,23 @@ public class FluidController implements AutoCloseable {
 
         System.out.println("Correlation id: " + corrId + ", Queue name: " + replyQueueName);
 
-        var request = Messages.Request.newBuilder()
+        var requestBuilder = Messages.Request.newBuilder()
                 .setNumFrames(numFrames)
                 .setWidth(width)
-                .setHeight(height)
-                .build();
+                .setHeight(height);
+
+        for (var source : sources) {
+            requestBuilder.addSources(Messages.Source.newBuilder()
+                    .setPosition(Messages.Vec2.newBuilder().setX(source.x).setY(source.y).build())
+                    .setDirection(Messages.Vec2.newBuilder().setX(source.dirX).setY(source.dirY).build())
+                    .build());
+        }
+
+        var request = requestBuilder.build();
 
         String requestQueueName = "fluid_request";
+
+        System.out.println("Sending num bytes: " + request.toByteArray().length);
         channel.basicPublish("", requestQueueName, props, request.toByteArray());
 
         channel.basicConsume(replyQueueName, true, (consumerTag, delivery) -> {
@@ -60,5 +71,10 @@ public class FluidController implements AutoCloseable {
     @FunctionalInterface
     public interface Callback {
         void handle(Messages.Frame frame);
+    }
+
+    public static class Source {
+        public float x, y;
+        public float dirX, dirY;
     }
 }

@@ -32,9 +32,9 @@
       </HBox>
       <HBox alignment="CENTER">
          <children>
-            <Pane style="-fx-border-color: black;">
+            <Pane fx:id="pane" style="-fx-border-color: black;">
                <children>
-                  <ImageView fx:id="imageView" fitHeight="250.0" fitWidth="250.0" pickOnBounds="true" preserveRatio="true" />
+                  <ImageView fx:id="imageView" fitHeight="250.0" fitWidth="250.0" onMouseDragged="#onDragOver" onMousePressed="#onDragEntered" onMouseReleased="#onDragDropped" pickOnBounds="true" preserveRatio="true" />
                </children>
             </Pane>
          </children>
